@@ -197,11 +197,23 @@ int append_row(editor_state *state, const char *chars, size_t length) {
         if (state->file_row_capacity == 0) {
             new_capacity = 8;   
         } else {
+            if (state->file_row_capacity > SIZE_MAX /2) {
+                free(copy);
+                return -1;
+            }
+
             new_capacity = state->file_row_capacity * 2;
         }
 
+        if (new_capacity > SIZE_MAX / sizeof(*state->file_rows)) {
+            free(copy);
+            return -1;
+        }
+
         editor_row *new_rows = realloc(
-            state->file_rows, new_capacity * sizeof(*new_rows));
+            state->file_rows,
+            new_capacity * sizeof(*new_rows)
+        );
 
         if(new_rows == NULL) {
             free(copy);
