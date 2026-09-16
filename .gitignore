@@ -1,3 +1,5 @@
 /gg
 /editor
 .*.swp
+.DS_Store
+gg.dSYM/
