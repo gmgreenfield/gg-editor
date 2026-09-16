@@ -180,9 +180,14 @@ int read_key(void) {
     }
 }
 
-int append_row(editor_state *state, const char *chars, size_t length) {
-    if(length == SIZE_MAX)
+int insert_row(editor_state *state, size_t index, const char *chars, size_t length) {
+    if (index > state->file_row_count) {
         return -1;
+    }
+
+    if(length == SIZE_MAX) {
+        return -1;
+    }
 
     char *copy = malloc(length + 1);
     if(copy == NULL) {
@@ -224,7 +229,7 @@ int append_row(editor_state *state, const char *chars, size_t length) {
         state->file_rows = new_rows;
     }
 
-    editor_row *row = &state->file_rows[state->file_row_count];
+    editor_row *row = &state->file_rows[index];
 
     row->chars = copy;
     row->length = length;
@@ -232,6 +237,10 @@ int append_row(editor_state *state, const char *chars, size_t length) {
     state->file_row_count++;
 
     return 0;
+}
+
+int append_row(editor_state *state, const char *chars, size_t length) {
+    return insert_row(state, state->file_row_count, chars, length);
 }
 
 int load_file(editor_state *s) {
