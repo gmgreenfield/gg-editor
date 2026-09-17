@@ -229,6 +229,14 @@ int insert_row(editor_state *state, size_t index, const char *chars, size_t leng
         state->file_rows = new_rows;
     }
 
+    size_t rows_to_move = state->file_row_count - index;
+
+    memmove(
+        &state->file_rows[index + 1],
+        &state->file_rows[index],
+        rows_to_move * sizeof(*state->file_rows)
+    );
+
     editor_row *row = &state->file_rows[index];
 
     row->chars = copy;
