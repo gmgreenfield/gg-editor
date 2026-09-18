@@ -426,6 +426,36 @@ int delete_char(editor_state *s) {
    return 0;
 }
 
+int insert_newline(editor_state *s) {
+    if (s->cursor_y < 0 || (size_t)s->cursor_y >= s->file_row_count) {
+        return -1;
+    }
+
+    editor_row *row = &s->file_rows[s->cursor_y];
+
+    if (s->cursor_x < 0 || (size_t)s->cursor_x > row->length) {
+        return -1;
+    }
+
+    size_t position = (size_t)s->cursor_x;
+    size_t tail_length = row->length - position;
+
+    if (insert_row(s, (size_t)s->cursor_y + 1, &row->chars[position],
+                  tail_length) == -1) {
+        return -1;
+    }
+
+    row = &s->file_rows[s->cursor_y];
+
+    row->length = position;
+    row->chars[position] = '\0';
+
+    s->cursor_y++;
+    s->cursor_x = 0;
+
+    return 0;
+}
+
 void free_rows(editor_state *s) {
     for (size_t i = 0; i < s->file_row_count; i++) {
        free(s->file_rows[i].chars);
