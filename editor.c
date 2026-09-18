@@ -548,6 +548,14 @@ int main(int argc, char **argv) {
                     }
                 }
                 break;
+            case '\r':
+            case '\n':
+                if(insert_newline(&p) == -1) {
+                    fprintf(stderr, "failed to insert newline\n");
+                    exit_status = 1;
+                    goto cleanup;
+                }
+                break;
             case CTRL_KEY('s'):
                 if(save_file(&p) == -1) {
                     exit_status = 1;
@@ -573,7 +581,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 break;
-            }
+        }
     }
 
 cleanup:
