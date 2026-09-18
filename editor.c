@@ -38,7 +38,7 @@ typedef struct {
 } editor_state;
 
 void draw_rows(const editor_state *s) {
-    for (int i=0; i < s->screen_rows; i++) {
+    for (int i=0; i < s->screen_rows - 1; i++) {
         if((size_t)i < s->file_row_count) {
             size_t row_length = s->file_rows[i].length;
             if(s->file_rows[i].length > (size_t)s->screen_cols) {
@@ -57,9 +57,20 @@ void draw_rows(const editor_state *s) {
     }
 }
 
+void draw_status_bar(const editor_state *s) {
+    printf("\x1b[7m");
+
+    for (int i=0; i< s->screen_cols; i++) {
+        putchar(' ');
+    }
+
+    printf("\x1b[m");
+}
+
 void refresh_screen(const editor_state *s) {
     printf("\x1b[?25l\x1b[2J\x1b[H");
     draw_rows(s);
+    draw_status_bar(s);
     printf("\x1b[%d;%dH", s->cursor_y+1, s->cursor_x+1);
     printf("\x1b[?25h");
     fflush(stdout);
@@ -541,7 +552,7 @@ int main(int argc, char **argv) {
                 break;
             case ARROW_DOWN:
                 if((size_t)(p.cursor_y + 1) < p.file_row_count &&
-                    p.cursor_y + 1 < p.screen_rows) {
+                    p.cursor_y + 1 < p.screen_rows - 1) {
                     p.cursor_y++;
                     if((size_t)p.cursor_x > p.file_rows[p.cursor_y].length) {
                         p.cursor_x = (int)p.file_rows[p.cursor_y].length;
