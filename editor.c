@@ -59,8 +59,33 @@ void draw_rows(const editor_state *s) {
 
 void draw_status_bar(const editor_state *s) {
     printf("\x1b[7m");
+ 
+    char status[256];
+    int status_length = snprintf(
+        status,
+        sizeof(status),
+        "%s | %zu lines | %d:%d",
+        s->filename != NULL ? s->filename : "[No Name]",
+        s->file_row_count,
+        s->cursor_y+1,
+        s->cursor_x+1
+    );
 
-    for (int i=0; i< s->screen_cols; i++) {
+    if (status_length < 0) {
+        status_length = 0;
+    }
+
+    if (status_length > (int)sizeof(status) - 1) {
+        status_length = (int)sizeof(status) - 1;
+    }
+
+    if (status_length > s->screen_cols) {
+        status_length = s->screen_cols;
+    }
+
+    fwrite(status, 1, (size_t)status_length, stdout);
+
+    for (int i=status_length; i < s->screen_cols; i++) {
         putchar(' ');
     }
 
