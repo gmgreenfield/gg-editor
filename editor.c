@@ -59,7 +59,7 @@ void draw_rows(const editor_state *s) {
 
 void draw_status_bar(const editor_state *s) {
     printf("\x1b[7m");
- 
+
     char status[256];
     int status_length = snprintf(
         status,
@@ -434,32 +434,74 @@ int insert_char(editor_state *s, int key) {
 }
 
 int delete_char(editor_state *s) {
-   if(s->cursor_y < 0 || (size_t)s->cursor_y >= s->file_row_count) {
-      return -1;
-   }
+    if (s->cursor_y < 0 ||
+        (size_t)s->cursor_y >= s->file_row_count) {
+        return -1;
+    }
 
-   editor_row *row = &s->file_rows[s->cursor_y];
+    editor_row *row = &s->file_rows[s->cursor_y];
 
-   if(s->cursor_x == 0) {
-      return 0;
-   }
+    if (s->cursor_x < 0 ||
+        (size_t)s->cursor_x > row->length) {
+        return -1;
+    }
 
-   if (s->cursor_x < 0 || (size_t)s->cursor_x > row->length) {
-      return -1;
-   }
+    if (s->cursor_x == 0) {
+        if (s->cursor_y == 0) {
+            return 0;
+        }
 
-   size_t position = (size_t)s->cursor_x;
+        size_t row_index = (size_t)s->cursor_y;
+        editor_row *previous = &s->file_rows[row_index - 1];
+        size_t previous_length = previous->length;
+        size_t current_length = row->length;
 
-   memmove(
-       &row->chars[position-1],
-       &row->chars[position],
-       row->length - position + 1
-   );
+        if (previous_length > SIZE_MAX - current_length) {
+            return -1;
+        }
 
-   row->length--;
-   s->cursor_x--;
+        size_t combined_length = previous_length + current_length;
+        if (combined_length == SIZE_MAX) {
+            return -1;
+        }
 
-   return 0;
+        char *new_chars = realloc(previous->chars, combined_length + 1);
+        if (new_chars == NULL) {
+            return -1;
+        }
+
+        previous->chars = new_chars;
+        memcpy(
+            &previous->chars[previous_length],
+            row->chars,
+            current_length + 1
+        );
+        previous->length = combined_length;
+
+        free(row->chars);
+        memmove(
+            row,
+            &s->file_rows[row_index + 1],
+            (s->file_row_count - row_index - 1) *
+                sizeof(*s->file_rows)
+        );
+
+        s->file_row_count--;
+        s->cursor_y--;
+        s->cursor_x = (int)previous_length;
+        return 0;
+    }
+
+    size_t position = (size_t)s->cursor_x;
+    memmove(
+        &row->chars[position - 1],
+        &row->chars[position],
+        row->length - position + 1
+    );
+
+    row->length--;
+    s->cursor_x--;
+    return 0;
 }
 
 int insert_newline(editor_state *s) {
@@ -600,12 +642,10 @@ int main(int argc, char **argv) {
                 break;
             case 127:
             case CTRL_KEY('h'):
-                if(p.cursor_x > 0) {
-                    if(delete_char(&p) == -1) {
-                        fprintf(stderr, "failed to delete character.\n");
-                        exit_status = 1;
-                        goto cleanup;
-                    };
+                if (delete_char(&p) == -1) {
+                    fprintf(stderr, "failed to delete character.\n");
+                    exit_status = 1;
+                    goto cleanup;
                 }
                 break;
             default:
