@@ -36,6 +36,7 @@ typedef struct {
     editor_row *file_rows;
     size_t file_row_count;
     size_t file_row_capacity;
+	const char *status_message;
 } editor_state;
 
 void draw_rows(const editor_state *s) {
@@ -62,15 +63,18 @@ void draw_status_bar(const editor_state *s) {
     printf("\x1b[7m");
 
     char status[256];
-    int status_length = snprintf(
-        status,
-        sizeof(status),
-        "%s | %zu lines | %d:%d",
-        s->filename != NULL ? s->filename : "[No Name]",
-        s->file_row_count,
-        s->cursor_y+1,
-        s->cursor_x+1
-    );
+    int status_length = 0;
+
+    if (s->status_message != NULL) {
+        status_length = snprintf(status, sizeof(status), "%s", s->status_message);
+    } else {
+        status_length = snprintf(status, sizeof(status), "%s | %zu lines | %d:%d",
+            s->filename != NULL ? s->filename : "[No Name]",
+            s->file_row_count,
+            s->cursor_y+1,
+            s->cursor_x+1
+        );
+    }
 
     if (status_length < 0) {
         status_length = 0;
@@ -600,8 +604,24 @@ int main(int argc, char **argv) {
             goto cleanup;
         }
 
-        if(key == CTRL_KEY('q'))
-            break;
+        if (key == CTRL_KEY('q')) {
+            if(p.dirty == 0) {
+                break;
+            } else {
+                p.status_message = "Unsaved changes - press Ctrl-Q again to quit.";
+                refresh_screen(&p);
+                if((key = read_key()) == -1) {
+                    exit_status = 1;
+                    goto cleanup;
+                }
+                p.status_message = NULL;
+                if (key == CTRL_KEY('q')) {
+                    break;
+                } else {
+                    continue;
+                }
+            }
+        }
 
         switch(key) {
             case ARROW_LEFT:
