@@ -30,6 +30,7 @@ typedef struct {
     int cursor_y;
     int screen_rows;
     int screen_cols;
+    int dirty;
     int final_newline;
     const char *filename;
     editor_row *file_rows;
@@ -384,12 +385,12 @@ int save_file(const editor_state *s) {
     }
 
     if(s->final_newline) {
-	if(fputc('\n', fd) == EOF) {
-	    perror("fputc");
-	    fclose(fd);
-	    return -1;
-	}
-    }
+        if(fputc('\n', fd) == EOF) {
+            perror("fputc");
+            fclose(fd);
+            return -1;
+         }
+     }
 
     if(fclose(fd) == EOF) {
         perror("fclose");
@@ -429,6 +430,7 @@ int insert_char(editor_state *s, int key) {
     row->chars[position] = (char)key;
     row->length++;
     s->cursor_x++;
+    s->dirty = 1;
 
     return 0;
 }
@@ -489,6 +491,8 @@ int delete_char(editor_state *s) {
         s->file_row_count--;
         s->cursor_y--;
         s->cursor_x = (int)previous_length;
+        s->dirty = 1;
+
         return 0;
     }
 
@@ -501,6 +505,8 @@ int delete_char(editor_state *s) {
 
     row->length--;
     s->cursor_x--;
+    s->dirty = 1;
+
     return 0;
 }
 
@@ -530,6 +536,7 @@ int insert_newline(editor_state *s) {
 
     s->cursor_y++;
     s->cursor_x = 0;
+    s->dirty = 1;
 
     return 0;
 }
@@ -638,6 +645,9 @@ int main(int argc, char **argv) {
                 if(save_file(&p) == -1) {
                     exit_status = 1;
                     goto cleanup;
+                }
+                if(p.filename != NULL) {
+                    p.dirty = 0;
                 }
                 break;
             case 127:
