@@ -1,34 +1,22 @@
-name: Format C Code
+name: Check C formatting
 
 on:
   push:
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  format:
+  format-check:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v7
 
       - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+        run: sudo apt-get update && sudo apt-get install --yes clang-format
 
-      - name: Format C code
-        run: |
-          find . \( -name '*.c' -o -name '*.h' \) -exec clang-format -i {} +
-
-      - name: Commit formatting changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add '*.c' '*.h'
-
-          if ! git diff --cached --quiet; then
-            git commit -m "Auto-format C code"
-            git push
-          fi
+      - name: Check formatting
+        run: make format-check
