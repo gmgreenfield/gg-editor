@@ -58,6 +58,21 @@ static void test_scrolling(void) {
     check(state.col_offset == 4, "horizontal scroll follows cursor left");
 }
 
+static void test_home_end_navigation(void) {
+    editor_state state = {0};
+
+    check(append_row(&state, "hello", 5) == 0, "append Home/End test row");
+    state.cursor_x = 3;
+
+    move_cursor_home(&state);
+    check(state.cursor_x == 0, "Home moves to the beginning of the line");
+
+    move_cursor_end(&state);
+    check(state.cursor_x == 5, "End moves to the end of the line");
+
+    free_rows(&state);
+}
+
 static void test_load_save(void) {
     char path[] = "/tmp/gg-editor-test-XXXXXX";
     int fd = mkstemp(path);
@@ -94,6 +109,7 @@ static void test_load_save(void) {
 int main(void) {
     test_editing_operations();
     test_scrolling();
+    test_home_end_navigation();
     test_load_save();
 
     if (failures != 0) {

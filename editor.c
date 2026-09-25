@@ -24,7 +24,7 @@ static volatile sig_atomic_t resize_pending;
 
 struct termios original;
 
-enum editor_key { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
+enum editor_key { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN, HOME, END };
 
 typedef struct {
     char *chars;
@@ -50,6 +50,14 @@ typedef struct {
 void handle_resize(int signal_number) {
     (void)signal_number;
     resize_pending = 1;
+}
+
+void move_cursor_home(editor_state *s) { s->cursor_x = 0; }
+
+void move_cursor_end(editor_state *s) {
+    if (s->cursor_y >= 0 && (size_t)s->cursor_y < s->file_row_count) {
+        s->cursor_x = (int)s->file_rows[s->cursor_y].length;
+    }
 }
 
 void scroll_cursor(editor_state *s) {
@@ -251,6 +259,10 @@ int read_key(void) {
                         return ARROW_RIGHT;
                     case 'D':
                         return ARROW_LEFT;
+                    case 'H':
+                        return HOME;
+                    case 'F':
+                        return END;
                     default:
                         return '\x1b';
                     }
@@ -720,6 +732,12 @@ int main(int argc, char **argv) {
                 exit_status = 1;
                 goto cleanup;
             }
+            break;
+        case HOME:
+            move_cursor_home(&p);
+            break;
+        case END:
+            move_cursor_end(&p);
             break;
         default:
             if (key >= 32 && key <= 126) {
