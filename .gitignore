@@ -1,6 +1,7 @@
 /gg
 /gg-debug
 /editor
+/tests
 .*.swp
 .DS_Store
 *.dSYM/
