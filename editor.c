@@ -1,6 +1,11 @@
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#endif
+
 #define _POSIX_C_SOURCE 200809L
 
 #include <errno.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,8 +13,14 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <sys/signal.h>
+#endif
 
 #define CTRL_KEY(k) ((k) & 0x1f)
+#define KEY_RESIZE 1004
+
+static volatile sig_atomic_t resize_pending;
 
 struct termios original;
 
@@ -35,6 +46,11 @@ typedef struct {
     size_t col_offset;
     const char *status_message;
 } editor_state;
+
+void handle_resize(int signal_number) {
+    (void)signal_number;
+    resize_pending = 1;
+}
 
 void scroll_cursor(editor_state *s) {
     size_t text_rows = (size_t)(s->screen_rows - 1);
@@ -193,6 +209,10 @@ int read_key(void) {
     unsigned char key;
 
     while (1) {
+        if (resize_pending) {
+            return KEY_RESIZE;
+        }
+
         ssize_t bytes_read = read_byte(&key);
         if (bytes_read == -1) {
             perror("read");
@@ -577,16 +597,52 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
+    if (signal(SIGWINCH, handle_resize) == SIG_ERR) {
+        perror("signal");
+        exit_status = 1;
+        goto cleanup;
+    }
+
     if (get_window_size(&p.screen_rows, &p.screen_cols) == -1) {
         perror("ioctl");
         exit_status = 1;
         goto cleanup;
     }
 
+    if (p.screen_rows < 2) {
+        p.screen_rows = 2;
+    }
+
+    if (p.screen_cols < 1) {
+        p.screen_cols = 1;
+    }
+
     while (1) {
+        if (resize_pending) {
+            resize_pending = 0;
+
+            if (get_window_size(&p.screen_rows, &p.screen_cols) == -1) {
+                perror("ioctl");
+                exit_status = 1;
+                goto cleanup;
+            }
+
+            if (p.screen_rows < 2) {
+                p.screen_rows = 2;
+            }
+
+            if (p.screen_cols < 1) {
+                p.screen_cols = 1;
+            }
+        }
+
         scroll_cursor(&p);
         refresh_screen(&p);
         key = read_key();
+
+        if (key == KEY_RESIZE) {
+            continue;
+        }
 
         if (key == -1) {
             exit_status = 1;
