@@ -31,18 +31,45 @@ typedef struct {
     editor_row *file_rows;
     size_t file_row_count;
     size_t file_row_capacity;
+    size_t row_offset;
+    size_t col_offset;
     const char *status_message;
 } editor_state;
 
+void scroll_cursor(editor_state *s) {
+    size_t text_rows = (size_t)(s->screen_rows - 1);
+    size_t text_cols = (size_t)s->screen_cols;
+
+    if ((size_t)s->cursor_y < s->row_offset) {
+        s->row_offset = (size_t)s->cursor_y;
+    } else if ((size_t)s->cursor_y >= s->row_offset + text_rows) {
+        s->row_offset = (size_t)s->cursor_y - text_rows + 1;
+    }
+
+    if ((size_t)s->cursor_x < s->col_offset) {
+        s->col_offset = (size_t)s->cursor_x;
+    } else if ((size_t)s->cursor_x >= s->col_offset + text_cols) {
+        s->col_offset = (size_t)s->cursor_x - text_cols + 1;
+    }
+}
+
 void draw_rows(const editor_state *s) {
     for (int i = 0; i < s->screen_rows - 1; i++) {
-        if ((size_t)i < s->file_row_count) {
-            size_t row_length = s->file_rows[i].length;
-            if (s->file_rows[i].length > (size_t)s->screen_cols) {
-                row_length = (size_t)s->screen_cols;
+        size_t file_row = s->row_offset + (size_t)i;
+        if (file_row < s->file_row_count) {
+            const editor_row *row = &s->file_rows[file_row];
+            size_t start = s->col_offset;
+            size_t length = 0;
+
+            if (start < row->length) {
+                length = row->length - start;
+                if (length > (size_t)s->screen_cols) {
+                    length = s->screen_cols;
+                }
             }
-            for (size_t j = 0; j < row_length; j++) {
-                putchar(s->file_rows[i].chars[j]);
+
+            for (size_t j = 0; j < length; j++) {
+                putchar(row->chars[start + j]);
             }
         } else {
             putchar('~');
@@ -93,7 +120,8 @@ void refresh_screen(const editor_state *s) {
     printf("\x1b[?25l\x1b[2J\x1b[H");
     draw_rows(s);
     draw_status_bar(s);
-    printf("\x1b[%d;%dH", s->cursor_y + 1, s->cursor_x + 1);
+    printf("\x1b[%d;%dH", s->cursor_y - (int)s->row_offset + 1,
+           s->cursor_x - (int)s->col_offset + 1);
     printf("\x1b[?25h");
     fflush(stdout);
 }
@@ -556,6 +584,7 @@ int main(int argc, char **argv) {
     }
 
     while (1) {
+        scroll_cursor(&p);
         refresh_screen(&p);
         key = read_key();
 
@@ -569,6 +598,7 @@ int main(int argc, char **argv) {
                 break;
             } else {
                 p.status_message = "Unsaved changes - press Ctrl-Q again to quit.";
+                scroll_cursor(&p);
                 refresh_screen(&p);
                 if ((key = read_key()) == -1) {
                     exit_status = 1;
@@ -590,8 +620,7 @@ int main(int argc, char **argv) {
             break;
         case ARROW_RIGHT:
             if ((size_t)p.cursor_y < p.file_row_count &&
-                (size_t)p.cursor_x < p.file_rows[p.cursor_y].length &&
-                p.cursor_x < p.screen_cols - 1) {
+                (size_t)p.cursor_x < p.file_rows[p.cursor_y].length) {
                 p.cursor_x++;
             }
             break;
@@ -604,7 +633,7 @@ int main(int argc, char **argv) {
             }
             break;
         case ARROW_DOWN:
-            if ((size_t)(p.cursor_y + 1) < p.file_row_count && p.cursor_y + 1 < p.screen_rows - 1) {
+            if ((size_t)(p.cursor_y + 1) < p.file_row_count) {
                 p.cursor_y++;
                 if ((size_t)p.cursor_x > p.file_rows[p.cursor_y].length) {
                     p.cursor_x = (int)p.file_rows[p.cursor_y].length;
