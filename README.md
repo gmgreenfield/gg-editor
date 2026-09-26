@@ -13,12 +13,9 @@ this README with additional details as the project progresses.
 | Key | Action |
 | --- | --- |
 | Arrow keys | Move the cursor |
-| Home | Move to the beginning of the current line |
-| End | Move to the end of the current line |
-| Page Up | Move up by one screen of text |
-| Page Down | Move down by one screen of text |
-| Printable characters | Insert text |
-| Enter | Insert a new line |
-| Backspace or `Ctrl-H` | Delete the character before the cursor; at column 0, join with the previous line |
-| `Ctrl-S` | Save the current file |
-| `Ctrl-Q` | Quit; press it again to confirm when there are unsaved changes |
+| `home` | Move to the beginning of the current line |
+| `end` | Move to the end of the current line |
+| `pgup` | Move up by one screen of text |
+| `pgdn` | Move down by one screen of text |
+| `ctrl-s` | Save the current file |
+| `ctrl-q` | Quit; press it again to confirm when there are unsaved changes |
