@@ -118,6 +118,13 @@ void move_cursor_page_up(editor_state *s) {
         target_row = 0;
     }
 
+    size_t moved = current_row - target_row;
+    if (moved > s->row_offset) {
+        s->row_offset = 0;
+    } else {
+        s->row_offset -= moved;
+    }
+
     s->cursor_y = (int)target_row;
 
     if ((size_t)s->cursor_x > s->file_rows[target_row].length) {
@@ -142,6 +149,7 @@ void move_cursor_page_down(editor_state *s) {
     }
 
     s->cursor_y = (int)target_row;
+    s->row_offset += target_row - current_row;
 
     if ((size_t)s->cursor_x > s->file_rows[target_row].length) {
         s->cursor_x = (int)s->file_rows[target_row].length;
