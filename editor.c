@@ -683,6 +683,61 @@ void free_rows(editor_state *s) {
     s->file_row_capacity = 0;
 }
 
+int search_prompt(editor_state *s) {
+    char query[256] = {0};
+    char status[300];
+    size_t length = 0;
+
+    while (1) {
+        snprintf(status, sizeof(status), "Search: %s", query);
+        s->status_message = status;
+
+        scroll_cursor(s);
+        refresh_screen(s);
+
+        int key = read_key();
+
+        if (key == '\x1b') {
+            s->status_message = NULL;
+            return 0;
+        }
+
+        if (key == '\r' || key == '\n') {
+            int match_row;
+            int match_col;
+
+            if (find_next_match(s, query, s->cursor_y, s->cursor_x, &match_row, &match_col) == 0) {
+                s->cursor_y = match_row;
+                s->cursor_x = match_col;
+            } else {
+                s->status_message = "Not found";
+                refresh_screen(s);
+                read_key();
+            }
+
+            s->status_message = NULL;
+            return 0;
+        }
+
+        if (key == 127 || key == CTRL_KEY('h')) {
+            if (length > 0) {
+                query[--length] = '\0';
+            }
+            continue;
+        }
+
+        if (key >= 32 && key <= 126 && length < sizeof(query) - 1) {
+            query[length++] = (char)key;
+            query[length] = '\0';
+        }
+
+        if (key == -1) {
+            s->status_message = NULL;
+            return -1;
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     editor_state p = {0};
     int key;
@@ -840,7 +895,10 @@ int main(int argc, char **argv) {
             }
             break;
         case CTRL_KEY('f'):
-            // TODO search feature
+            if (search_prompt(&p) == -1) {
+                exit_status = 1;
+                goto cleanup;
+            }
             break;
         case HOME:
             move_cursor_home(&p);
