@@ -106,6 +106,32 @@ static void test_page_navigation(void) {
     free_rows(&state);
 }
 
+static void test_search(void) {
+    editor_state state = {0};
+    int match_row;
+    int match_col;
+
+    check(append_row(&state, "alpha beta", 10) == 0, "append first search row");
+    check(append_row(&state, "gamma alpha", 11) == 0, "append second search row");
+
+    check(find_next_match(&state, "alpha", 0, 0, &match_row, &match_col) == 0,
+          "find first search match");
+    check(match_row == 0 && match_col == 0, "first search match position");
+
+    check(find_next_match(&state, "alpha", 0, 1, &match_row, &match_col) == 0,
+          "find next search match");
+    check(match_row == 1 && match_col == 6, "next search match position");
+
+    check(find_next_match(&state, "alpha", 1, 7, &match_row, &match_col) == 0,
+          "search wraps around at end of file");
+    check(match_row == 0 && match_col == 0, "wrapped search match position");
+
+    check(find_next_match(&state, "missing", 0, 0, &match_row, &match_col) == -1,
+          "search reports a missing match");
+
+    free_rows(&state);
+}
+
 static void test_load_save(void) {
     char path[] = "/tmp/gg-editor-test-XXXXXX";
     int fd = mkstemp(path);
@@ -144,6 +170,7 @@ int main(void) {
     test_scrolling();
     test_home_end_navigation();
     test_page_navigation();
+    test_search();
     test_load_save();
 
     if (failures != 0) {
