@@ -129,6 +129,22 @@ static void test_search(void) {
     check(find_next_match(&state, "missing", 0, 0, &match_row, &match_col) == -1,
           "search reports a missing match");
 
+    check(find_next_match(&state, "", 0, 0, &match_row, &match_col) == -1,
+          "empty search query is rejected");
+
+    check(find_next_match(&state, "beta", 0, 6, &match_row, &match_col) == 0,
+          "search includes a match at the starting column");
+    check(match_row == 0 && match_col == 6, "exact starting-column match position");
+
+    check(find_next_match(&state, "beta", 0, 7, &match_row, &match_col) == 0,
+          "search wraps within the starting row");
+    check(match_row == 0 && match_col == 6, "same-row wrapped match position");
+
+    check(find_next_match(&state, "alpha", -1, 0, &match_row, &match_col) == -1,
+          "negative starting row is rejected");
+    check(find_next_match(&state, "alpha", 0, 99, &match_row, &match_col) == -1,
+          "starting column past the row is rejected");
+
     free_rows(&state);
 }
 
