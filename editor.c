@@ -741,11 +741,11 @@ int search_prompt(editor_state *s) {
 int main(int argc, char **argv) {
     editor_state p = {0};
     int key;
-    int exit_status = 0;
+    int exit_status = EXIT_SUCCESS;
 
     if (argc > 2) {
         fprintf(stderr, "usage: %s [filename]\n", argv[0]);
-        exit_status = 1;
+        exit_status = EXIT_FAILURE;
         goto cleanup;
     }
 
@@ -753,32 +753,32 @@ int main(int argc, char **argv) {
         p.filename = argv[1];
 
     if (load_file(&p) == -1) {
-        exit_status = 1;
+        exit_status = EXIT_FAILURE;
         goto cleanup;
     }
 
     if (p.file_row_count == 0) {
         if (append_row(&p, "", 0) == -1) {
             fprintf(stderr, "Failed to create initial row.\n");
-            exit_status = 1;
+            exit_status = EXIT_FAILURE;
             goto cleanup;
         }
     }
 
     if (enable_raw_mode() == -1) {
-        exit_status = 1;
+        exit_status = EXIT_FAILURE;
         goto cleanup;
     }
 
     if (signal(SIGWINCH, handle_resize) == SIG_ERR) {
         perror("signal");
-        exit_status = 1;
+        exit_status = EXIT_FAILURE;
         goto cleanup;
     }
 
     if (get_window_size(&p.screen_rows, &p.screen_cols) == -1) {
         perror("ioctl");
-        exit_status = 1;
+        exit_status = EXIT_FAILURE;
         goto cleanup;
     }
 
@@ -796,7 +796,7 @@ int main(int argc, char **argv) {
 
             if (get_window_size(&p.screen_rows, &p.screen_cols) == -1) {
                 perror("ioctl");
-                exit_status = 1;
+                exit_status = EXIT_FAILURE;
                 goto cleanup;
             }
 
@@ -818,7 +818,7 @@ int main(int argc, char **argv) {
         }
 
         if (key == -1) {
-            exit_status = 1;
+            exit_status = EXIT_FAILURE;
             goto cleanup;
         }
 
@@ -830,7 +830,7 @@ int main(int argc, char **argv) {
                 scroll_cursor(&p);
                 refresh_screen(&p);
                 if ((key = read_key()) == -1) {
-                    exit_status = 1;
+                    exit_status = EXIT_FAILURE;
                     goto cleanup;
                 }
                 p.status_message = NULL;
@@ -873,13 +873,13 @@ int main(int argc, char **argv) {
         case '\n':
             if (insert_newline(&p) == -1) {
                 fprintf(stderr, "Failed to insert newline.\n");
-                exit_status = 1;
+                exit_status = EXIT_FAILURE;
                 goto cleanup;
             }
             break;
         case CTRL_KEY('s'):
             if (save_file(&p) == -1) {
-                exit_status = 1;
+                exit_status = EXIT_FAILURE;
                 goto cleanup;
             }
             if (p.filename != NULL) {
@@ -890,13 +890,13 @@ int main(int argc, char **argv) {
         case CTRL_KEY('h'):
             if (delete_char(&p) == -1) {
                 fprintf(stderr, "Failed to delete character.\n");
-                exit_status = 1;
+                exit_status = EXIT_FAILURE;
                 goto cleanup;
             }
             break;
         case CTRL_KEY('f'):
             if (search_prompt(&p) == -1) {
-                exit_status = 1;
+                exit_status = EXIT_FAILURE;
                 goto cleanup;
             }
             break;
@@ -916,7 +916,7 @@ int main(int argc, char **argv) {
             if (key >= 32 && key <= 126) {
                 if (insert_char(&p, key) == -1) {
                     fprintf(stderr, "Failed to insert character.\n");
-                    exit_status = 1;
+                    exit_status = EXIT_FAILURE;
                     goto cleanup;
                 }
             }
