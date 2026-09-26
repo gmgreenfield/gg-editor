@@ -907,9 +907,11 @@ int main(int argc, char **argv) {
                 goto cleanup;
             }
             break;
+        case CTRL_KEY('a'):
         case HOME:
             move_cursor_home(&p);
             break;
+        case CTRL_KEY('e'):
         case END:
             move_cursor_end(&p);
             break;
