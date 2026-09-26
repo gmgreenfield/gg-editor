@@ -106,6 +106,65 @@ static void test_page_navigation(void) {
     free_rows(&state);
 }
 
+static void test_page_viewport(void) {
+    editor_state state = {.screen_rows = 8, .screen_cols = 80};
+    for (int i = 0; i < 21; i++) {
+        int result = append_row(&state, "example", 7);
+        check(result == 0, "create paging viewport fixture");
+        if (result != 0) {
+            free_rows(&state);
+            return;
+        }
+    }
+
+    /* Seven text rows; move the view with the cursor, including partial
+       movement at file boundaries. Each case starts independently. */
+    const struct {
+        const char *name;
+        int down;
+        int cursor;
+        size_t offset;
+        int expected_cursor;
+        size_t expected_offset;
+    } cases[] = {
+        {"Page Down from screen top", 1, 0, 0, 7, 7},
+        {"Page Down from screen middle", 1, 3, 0, 10, 7},
+        {"Page Down from screen bottom", 1, 6, 0, 13, 7},
+        {"Page Up from screen top", 0, 7, 7, 0, 0},
+        {"Page Up from screen middle", 0, 10, 7, 3, 0},
+        {"Page Up from screen bottom", 0, 13, 7, 6, 0},
+        {"Page Down near end of file", 1, 17, 14, 20, 17},
+        {"Page Down at end of file", 1, 20, 17, 20, 17},
+        {"Page Up near start of file", 0, 6, 3, 0, 0},
+        {"Page Up at start of file", 0, 0, 0, 0, 0},
+    };
+
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        state.cursor_y = cases[i].cursor;
+        state.cursor_x = 2;
+        state.row_offset = cases[i].offset;
+        state.col_offset = 0;
+
+        if (cases[i].down)
+            move_cursor_page_down(&state);
+        else
+            move_cursor_page_up(&state);
+
+        /* Include the same visibility adjustment used before each redraw. */
+        scroll_cursor(&state);
+
+        char message[160];
+        snprintf(message, sizeof(message), "%s: cursor position", cases[i].name);
+        check(state.cursor_y == cases[i].expected_cursor, message);
+        snprintf(message, sizeof(message), "%s: viewport offset", cases[i].name);
+        check(state.row_offset == cases[i].expected_offset, message);
+        check(state.cursor_x == 2, "paging preserves a valid column");
+        check(state.dirty == 0, "paging does not mark the document modified");
+    }
+
+    free_rows(&state);
+}
+
 static void test_search(void) {
     editor_state state = {0};
     int match_row;
@@ -216,6 +275,7 @@ int main(void) {
     test_scrolling();
     test_home_end_navigation();
     test_page_navigation();
+    test_page_viewport();
     test_search();
     test_load_save();
 
