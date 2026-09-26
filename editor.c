@@ -906,9 +906,11 @@ int main(int argc, char **argv) {
         case END:
             move_cursor_end(&p);
             break;
+        case CTRL_KEY('b'):
         case PAGE_UP:
             move_cursor_page_up(&p);
             break;
+        case CTRL_KEY('v'):
         case PAGE_DOWN:
             move_cursor_page_down(&p);
             break;
