@@ -56,6 +56,48 @@ typedef struct {
     const char *status_message;
 } editor_state;
 
+int find_next_match(const editor_state *s, const char *search_term, int start_row, int start_col,
+                    int *match_row, int *match_col) {
+    if (s == NULL || search_term == NULL || search_term[0] == '\0' || match_row == NULL ||
+        match_col == NULL || start_row < 0 || start_col < 0 ||
+        (size_t)start_row >= s->file_row_count ||
+        (size_t)start_col > s->file_rows[start_row].length) {
+        return -1;
+    }
+
+    for (int search_pass = 0; search_pass < 2; search_pass++) {
+        size_t first_row;
+        size_t last_row;
+
+        if (search_pass == 0) {
+            first_row = (size_t)start_row;
+            last_row = s->file_row_count;
+        } else {
+            first_row = 0;
+            last_row = (size_t)start_row + 1;
+        }
+
+        for (size_t row_index = first_row; row_index < last_row; row_index++) {
+            size_t column = 0;
+
+            if (search_pass == 0 && row_index == (size_t)start_row) {
+                column = (size_t)start_col;
+            }
+
+            const editor_row *row = &s->file_rows[row_index];
+            const char *match = strstr(row->chars + column, search_term);
+
+            if (match != NULL) {
+                *match_row = (int)row_index;
+                *match_col = (int)(match - row->chars);
+                return 0;
+            }
+        }
+    }
+
+    return -1;
+}
+
 void handle_resize(int signal_number) {
     (void)signal_number;
     resize_pending = 1;
@@ -796,6 +838,9 @@ int main(int argc, char **argv) {
                 exit_status = 1;
                 goto cleanup;
             }
+            break;
+        case CTRL_KEY('f'):
+            // TODO search feature
             break;
         case HOME:
             move_cursor_home(&p);
