@@ -13,10 +13,14 @@ this README with additional details as the project progresses.
 | Key | Action |
 | --- | --- |
 | Arrow keys | Move the cursor |
-| `home` | Move to the beginning of the current line |
-| `end` | Move to the end of the current line |
-| `pgup` | Move up by one screen of text |
-| `pgdn` | Move down by one screen of text |
+| `ctrl-a` or `home` | Move to the beginning of the current line |
+| `ctrl-e` or `end` | Move to the end of the current line |
+| `ctrl-b` or `pgup` | Move up by one screen of text |
+| `ctrl-v` or `pgdn` | Move down by one screen of text |
 | `ctrl-f` | Search for text and move to the next match |
 | `ctrl-s` | Save the current file |
 | `ctrl-q` | Quit; press it again to confirm when there are unsaved changes |
+
+In Apple's Terminal on macOS, hold Shift when pressing Page Up or Page Down
+to send those keys to the editor. Alternatively, use `ctrl-b` and `ctrl-v`.
+The Control-key bindings work on both Linux and macOS; use Control, not Command.
