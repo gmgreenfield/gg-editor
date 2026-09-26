@@ -227,7 +227,7 @@ void restore_original(void) {
 int enable_raw_mode(void) {
     if (!tcgetattr(STDIN_FILENO, &original)) {
         if (atexit(restore_original) != 0) {
-            fprintf(stderr, "failed to register terminal restoration\n");
+            fprintf(stderr, "Failed to register terminal restoration.\n");
             return -1;
         }
     } else {
@@ -430,7 +430,7 @@ int load_file(editor_state *s) {
         }
 
         if (append_row(s, line, (size_t)nread) == -1) {
-            fprintf(stderr, "failed to append row\n");
+            fprintf(stderr, "Failed to append row.\n");
             free(line);
             if (fclose(stream) == EOF) {
                 perror("fclose");
@@ -662,7 +662,7 @@ int main(int argc, char **argv) {
 
     if (p.file_row_count == 0) {
         if (append_row(&p, "", 0) == -1) {
-            fprintf(stderr, "failed to create initial row\n");
+            fprintf(stderr, "Failed to create initial row.\n");
             exit_status = 1;
             goto cleanup;
         }
@@ -775,7 +775,7 @@ int main(int argc, char **argv) {
         case '\r':
         case '\n':
             if (insert_newline(&p) == -1) {
-                fprintf(stderr, "failed to insert newline\n");
+                fprintf(stderr, "Failed to insert newline.\n");
                 exit_status = 1;
                 goto cleanup;
             }
@@ -792,7 +792,7 @@ int main(int argc, char **argv) {
         case 127:
         case CTRL_KEY('h'):
             if (delete_char(&p) == -1) {
-                fprintf(stderr, "failed to delete character.\n");
+                fprintf(stderr, "Failed to delete character.\n");
                 exit_status = 1;
                 goto cleanup;
             }
@@ -812,7 +812,7 @@ int main(int argc, char **argv) {
         default:
             if (key >= 32 && key <= 126) {
                 if (insert_char(&p, key) == -1) {
-                    fprintf(stderr, "failed to insert character.\n");
+                    fprintf(stderr, "Failed to insert character.\n");
                     exit_status = 1;
                     goto cleanup;
                 }
