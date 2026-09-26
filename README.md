@@ -17,5 +17,6 @@ this README with additional details as the project progresses.
 | `end` | Move to the end of the current line |
 | `pgup` | Move up by one screen of text |
 | `pgdn` | Move down by one screen of text |
+| `ctrl-f` | Search for text and move to the next match |
 | `ctrl-s` | Save the current file |
 | `ctrl-q` | Quit; press it again to confirm when there are unsaved changes |
