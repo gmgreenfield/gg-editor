@@ -501,8 +501,7 @@ int save_file(const editor_state *s) {
     if (s->filename == NULL)
         return 0;
 
-    FILE *fd;
-    fd = fopen(s->filename, "w");
+    FILE *fd = fopen(s->filename, "w");
     if (fd == NULL) {
         perror(s->filename);
         return -1;
