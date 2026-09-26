@@ -18,7 +18,6 @@
 #endif
 
 #define CTRL_KEY(k) ((k) & 0x1f)
-#define KEY_RESIZE 1004
 
 static volatile sig_atomic_t resize_pending;
 
@@ -32,7 +31,8 @@ enum editor_key {
     HOME,
     END,
     PAGE_UP,
-    PAGE_DOWN
+    PAGE_DOWN,
+    KEY_RESIZE
 };
 
 typedef struct {
