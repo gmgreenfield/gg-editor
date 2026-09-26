@@ -24,7 +24,16 @@ static volatile sig_atomic_t resize_pending;
 
 struct termios original;
 
-enum editor_key { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN, HOME, END };
+enum editor_key {
+    ARROW_LEFT = 1000,
+    ARROW_RIGHT,
+    ARROW_UP,
+    ARROW_DOWN,
+    HOME,
+    END,
+    PAGE_UP,
+    PAGE_DOWN
+};
 
 typedef struct {
     char *chars;
@@ -50,6 +59,51 @@ typedef struct {
 void handle_resize(int signal_number) {
     (void)signal_number;
     resize_pending = 1;
+}
+
+void move_cursor_page_up(editor_state *s) {
+    if (s == NULL || s->file_row_count == 0 || s->screen_rows < 2) {
+        return;
+    }
+
+    size_t page_height = (size_t)(s->screen_rows - 1);
+    size_t current_row = (size_t)s->cursor_y;
+    size_t target_row;
+
+    if (current_row > page_height) {
+        target_row = current_row - page_height;
+    } else {
+        target_row = 0;
+    }
+
+    s->cursor_y = (int)target_row;
+
+    if ((size_t)s->cursor_x > s->file_rows[target_row].length) {
+        s->cursor_x = (int)s->file_rows[target_row].length;
+    }
+}
+
+void move_cursor_page_down(editor_state *s) {
+    if (s == NULL || s->file_row_count == 0 || s->screen_rows < 2) {
+        return;
+    }
+
+    size_t page_height = (size_t)(s->screen_rows - 1);
+    size_t last_row = s->file_row_count - 1;
+    size_t current_row = (size_t)s->cursor_y;
+    size_t target_row;
+
+    if (page_height > last_row - current_row) {
+        target_row = last_row;
+    } else {
+        target_row = current_row + page_height;
+    }
+
+    s->cursor_y = (int)target_row;
+
+    if ((size_t)s->cursor_x > s->file_rows[target_row].length) {
+        s->cursor_x = (int)s->file_rows[target_row].length;
+    }
 }
 
 void move_cursor_home(editor_state *s) { s->cursor_x = 0; }
@@ -229,7 +283,7 @@ int read_key(void) {
             continue;
         } else if (bytes_read == 1) {
             if (key == '\x1b') {
-                unsigned char seq[2];
+                unsigned char seq[3];
 
                 ssize_t s0 = read_byte(&seq[0]);
                 if (s0 == -1) {
@@ -263,6 +317,16 @@ int read_key(void) {
                         return HOME;
                     case 'F':
                         return END;
+                    case '5':
+                        if (read_byte(&seq[2]) == 1 && seq[2] == '~') {
+                            return PAGE_UP;
+                        }
+                        return '\x1b';
+                    case '6':
+                        if (read_byte(&seq[2]) == 1 && seq[2] == '~') {
+                            return PAGE_DOWN;
+                        }
+                        return '\x1b';
                     default:
                         return '\x1b';
                     }
@@ -738,6 +802,12 @@ int main(int argc, char **argv) {
             break;
         case END:
             move_cursor_end(&p);
+            break;
+        case PAGE_UP:
+            move_cursor_page_up(&p);
+            break;
+        case PAGE_DOWN:
+            move_cursor_page_down(&p);
             break;
         default:
             if (key >= 32 && key <= 126) {

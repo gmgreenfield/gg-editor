@@ -73,6 +73,39 @@ static void test_home_end_navigation(void) {
     free_rows(&state);
 }
 
+static void test_page_navigation(void) {
+    editor_state state = {
+        .cursor_y = 0,
+        .cursor_x = 4,
+        .screen_rows = 4,
+    };
+
+    check(append_row(&state, "first", 5) == 0, "append first page row");
+    check(append_row(&state, "hello", 5) == 0, "append second page row");
+    check(append_row(&state, "two", 3) == 0, "append third page row");
+    check(append_row(&state, "three", 5) == 0, "append fourth page row");
+    check(append_row(&state, "end", 3) == 0, "append fifth page row");
+
+    move_cursor_page_down(&state);
+    check(state.cursor_y == 3, "Page Down moves by the text viewport height");
+    check(state.cursor_x == 4, "Page Down preserves the requested column when possible");
+
+    move_cursor_page_up(&state);
+    check(state.cursor_y == 0, "Page Up moves by the text viewport height");
+    check(state.cursor_x == 4, "Page Up restores the requested column when possible");
+
+    state.cursor_y = 1;
+    state.cursor_x = 4;
+    move_cursor_page_down(&state);
+    check(state.cursor_y == 4, "Page Down moves to the final row");
+    check(state.cursor_x == 3, "Page Down clamps to a shorter destination row");
+
+    move_cursor_page_down(&state);
+    check(state.cursor_y == 4, "Page Down clamps at the last row");
+
+    free_rows(&state);
+}
+
 static void test_load_save(void) {
     char path[] = "/tmp/gg-editor-test-XXXXXX";
     int fd = mkstemp(path);
@@ -110,6 +143,7 @@ int main(void) {
     test_editing_operations();
     test_scrolling();
     test_home_end_navigation();
+    test_page_navigation();
     test_load_save();
 
     if (failures != 0) {
